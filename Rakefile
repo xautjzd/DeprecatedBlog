@@ -23,7 +23,7 @@ task :post do
     title = ENV["title"] || "new-post"
     tags = ENV["tags"] || "[]"
     category = ENV["category"] || ""
-    category = "\"#{category.gsub(/-/,' ')}\"" if !category.empty?
+    slug = title.downcase.strip.gsub(' ', '-').gsub(/[^\w-]/, '')
 
     puts "Title: #{title}"
     puts "Tags: #{tags}"
