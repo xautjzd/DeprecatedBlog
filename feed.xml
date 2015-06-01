@@ -1,0 +1,753 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>xautjzd</title>
+    <description>博学之,审问之,慎思之,明辨之,笃行之
+</description>
+    <link>http://xautjzd.github.io/</link>
+    <atom:link href="http://xautjzd.github.io/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Mon, 01 Jun 2015 19:50:20 +0800</pubDate>
+    <lastBuildDate>Mon, 01 Jun 2015 19:50:20 +0800</lastBuildDate>
+    <generator>Jekyll v2.5.3</generator>
+    
+      <item>
+        <title>Ubuntu14.04上搭建ShadowSocks服务</title>
+        <description>&lt;p&gt;&lt;img src=&quot;/images/20150601.jpg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;vps&quot;&gt;1. VPS选择&lt;/h2&gt;
+
+&lt;p&gt;之前一直使用GoAgent作为破墙工具，不过后来有一阵用不成，即使更新到最新版，也未能如愿，后来忙于写论文，便用微软的&lt;a href=&quot;http://www.bing.com/&quot;&gt;Bing&lt;/a&gt;临时代替Google。用了一阵Bing,发现其实也挺好用，无论是UI还是搜索内容，都相当不错。只是偶尔想呼吸墙外空气，却未能如愿，始终给人不快的感觉。所以便有意选择付费服务。一直听说ShadowSocks搭建代理特别稳定，便开始留意VPS。可选的VPS很多，比较流行的当属Linode和Digital Ocean,不过Linode服务实在是太贵了，且最低配都感觉有点大材小用，没必要这么奢侈。便着重关注了下DO。可选的VPS有：&lt;/p&gt;
+
+&lt;!-- more --&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.linode.com/&quot;&gt;Linode&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.digitalocean.com&quot;&gt;Digital Ocean&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://bandwagonhost.com/&quot;&gt;Bandwagon Host&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.ramnode.com&quot;&gt;RamNode&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;终于在昨天没忍住花5刀买了一个月的&lt;a href=&quot;https://www.digitalocean.com&quot;&gt;Digital Ocean&lt;/a&gt;服务。买了之后才知道通过已注册用户的邀请链接购买会有优惠，双方都能享受，所以如果有需要购买的用户，请通过熟人邀请注册，利人利己。&lt;a href=&quot;https://bandwagonhost.com/&quot;&gt;Bandwagon Host&lt;/a&gt;是买完后才发现的，最吸引人的是256M的内存4.99刀/年！简直太便宜了！买完DO便略后悔了。&lt;/p&gt;
+
+&lt;p&gt;Digital Ocean最低配5刀/月，内存512M，20G的SSD，这对跑个ShadowSocks绰绰有余，只是有点略贵。不过后来获得意外之喜，发现新注册用户可以获得10刀的优惠，不过官网可没有公布这样的讯息，无意之中网上浏览到的，找个promo code，然后在settings/billing中的promode code填入即可享受优惠，promo code的获取网址：http://digitalocean.youhuima.cc/ 。Google或者Bing搜[Digital Ocean promo code]，不少网站都有类似的优惠码。&lt;/p&gt;
+
+&lt;p&gt;Digital Ocean目前还不支持支付宝，但可通过PayPal付款，绑定国内的银联卡即可支付。注册并购买成功后登录进去，创建一个Droplet，服务器据说最好选择San Francisco的，其他地方的服务不是很好，不过没有亲测，未知其他地方地方的服务质量真实情况。&lt;/p&gt;
+
+&lt;h2 id=&quot;shadowsocks&quot;&gt;2. 搭建ShadowSocks服务&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/shadowsocks/shadowsocks&quot;&gt;ShadowSocks&lt;/a&gt;源码托管在GitHub上，且有多个版本，有Python,GO，C#等等。不过通常都采用Python版。ShadowSocks代理的原理如下图所示：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/shadowsocks.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;ShadowSocks分为客户端与服务端，用户发送的Web请求，经由本地的ShadowSocks客户端发送给ShadowSocks远程服务端，远程服务端负责将请求发给用户请求的目标服务器，目标服务器将响应结果返回给SS服务端，经由SS客户端发送给用户。&lt;/p&gt;
+
+&lt;p&gt;安装过程可参考Shadow的&lt;a href=&quot;https://github.com/shadowsocks/shadowsocks/wiki&quot;&gt;文档&lt;/a&gt;.我这里简要记录下。&lt;/p&gt;
+
+&lt;h3 id=&quot;shadowsocks-1&quot;&gt;2.1 安装ShadowSocks服务端&lt;/h3&gt;
+
+&lt;p&gt;Debian/Ubuntu:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;#apt-get update
+#apt-get install python-pip
+#pip install shadowsocks
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;CentOS:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;#yum install python-setuptools &amp;amp;&amp;amp; easy_install pip
+#pip install shadowsocks
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&quot;shadowsocks-2&quot;&gt;2.2 开启ShadowSocks服务&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code&gt;#ssserver -p 443  -k password -m aes-256-cfb
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;不过也可通过&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;#ssserver -p 443 -k password -m aes-256-cfb --user nobody -d start
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;使其在后台运行&lt;/p&gt;
+
+&lt;p&gt;不过大多更倾向于将配置保存于配置文件中，创建一个配置文件/etc/shadowsocks.json,然后填入以下内容：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;{
+		&quot;server&quot;:&quot;my_server_ip&quot;,
+		&quot;server_port&quot;:8388,
+		&quot;local_address&quot;: &quot;127.0.0.1&quot;,
+   		&quot;local_port&quot;:1080,
+		&quot;password&quot;:&quot;mypassword&quot;,
+		&quot;timeout&quot;:300,
+		&quot;method&quot;:&quot;aes-256-cfb&quot;,
+   		&quot;fast_open&quot;: false
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;只需更改server IP和password即可。可参考：&lt;a href=&quot;https://github.com/shadowsocks/shadowsocks/wiki/Configuration-via-Config-File&quot;&gt;https://github.com/shadowsocks/shadowsocks/wiki/Configuration-via-Config-File&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;以上配置适用于个人，但不便与人分享，毕竟密码属于私有的东西。若要与人共享SS服务，可创建多用户的配置，配置如下：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;{
+		&quot;server&quot;: &quot;my_server_ip&quot;,
+		&quot;port_password&quot;: {
+    		&quot;8381&quot;: “password1&quot;,
+    		&quot;8382&quot;: &quot;password2&quot;,
+    		&quot;8383&quot;: &quot;password3&quot;,
+    		&quot;8384&quot;: &quot;password4&quot;
+		},
+	&quot;local_address&quot;: &quot;127.0.0.1&quot;,
+   		&quot;local_port&quot;:1080,
+		&quot;timeout&quot;: 300,
+		&quot;method&quot;: &quot;aes-256-cfb&quot; }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;不同端口对应不同用户，并设置不同密码。&lt;/p&gt;
+
+&lt;p&gt;配置完成后，通过：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;#ssserver -c /etc/shadowsocks.json
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在前台开启SS服务。或者也可通过：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;#ssserver -c /etc/shadowsocks.json -d start
+#ssserver -c /etc/shadowsocks.json -d stop
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在后台开启服务。&lt;/p&gt;
+
+&lt;p&gt;多用户具体可参考：&lt;a href=&quot;https://github.com/shadowsocks/shadowsocks/wiki/Configure-Multiple-Users&quot;&gt;https://github.com/shadowsocks/shadowsocks/wiki/Configure-Multiple-Users&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;【可选操作】为了更快的服务，可开启TCP Fast Open，不过需要多耗费约30M的内存。以下为截取官方内容：&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;After optimizing, a busy Shadowsocks server that handles thousands of connections, takes about 30MB memory and 10% CPU. Notice that at the same time, Linux kernel usually uses &amp;gt;100MB RAM to hold buffer and cache for those connections. By using the sysctl config above, you are trading off RAM for speed. If you want to use less RAM, reduce the size of rmem and wmem.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;具体操作见&lt;a href=&quot;https://github.com/shadowsocks/shadowsocks/wiki/TCP-Fast-Open&quot;&gt;https://github.com/shadowsocks/shadowsocks/wiki/TCP-Fast-Open&lt;/a&gt;。&lt;/p&gt;
+
+&lt;h3 id=&quot;ss&quot;&gt;2.3 开启SS客户端&lt;/h3&gt;
+
+&lt;p&gt;GUI客户端各平台都有。&lt;/p&gt;
+
+&lt;p&gt;Windows平台下载地址：&lt;a href=&quot;http://sourceforge.net/projects/shadowsocksgui/files/dist/&quot;&gt;http://sourceforge.net/projects/shadowsocksgui/files/dist/&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Linux平台无须使用GUI客户端，只须如2.1步骤安装SS，然后通过：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;#sslocal -s server_ip -p port -k password
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;开始客户端监听。&lt;/p&gt;
+
+&lt;p&gt;Android客户端需要上Google Play下载，我这有现成的，如有需要，请联系我。&lt;/p&gt;
+
+&lt;h3 id=&quot;section&quot;&gt;2.4 浏览器配置&lt;/h3&gt;
+
+&lt;p&gt;Chrome浏览器，请使用&lt;a href=&quot;https://github.com/FelisCatus/SwitchyOmega&quot;&gt;SwitchOmega&lt;/a&gt;。然后在其中加入本地代理即可。协议选择sockv5，监听的端口为1080.&lt;/p&gt;
+
+</description>
+        <pubDate>Mon, 01 Jun 2015 00:00:00 +0800</pubDate>
+        <link>http://xautjzd.github.io/2015/06/01/build-shadowsocks-on-ubuntu.html</link>
+        <guid isPermaLink="true">http://xautjzd.github.io/2015/06/01/build-shadowsocks-on-ubuntu.html</guid>
+        
+        
+        <category>tech</category>
+        
+      </item>
+    
+      <item>
+        <title>Ubuntu安装TexStudio</title>
+        <description>&lt;p&gt;&lt;img src=&quot;/images/20150601.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;自从去年简历采用LaTex制作后,便逐渐对它有了好感.不过当时用的是Windows环境,直接采用Windows下的套装CTex进行简历的编辑与PDF的生成,编辑器采用的Texworks,且简历的模板还是网上宕下来并小作修改.虽然成功地生成简历,不过源码里面的不少细节还是一知半解.后来换到Ubuntu环境,又成功安装Linux下的LaTex编译环境&lt;a href=&quot;http://tug.org/texlive/&quot;&gt;Texlive&lt;/a&gt;,不过Texlive提供的只是编译环境而已,需要自己找寻称手的编辑器采用tex语法编辑好文档后并保存成&lt;code&gt;.tex&lt;/code&gt;格式文件,然后采用texlive的编译幻镜进行编译.由于自己是Vim党,所以从一开始便试图采用Vim进行tex文档编辑,试了好几个Vim下的LaTex插件,都未能称心.我的需求大致如下:&lt;/p&gt;
+
+&lt;!-- more --&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;标签自动补全(必要)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;直到有一天在好友胡俊的推荐下获知TexStudio的存在,便尝试了下，发现确实相当不错。不仅提供了GUI的界面，使操作变得更为方面，而且还有标签自动补全等功能。只是发现默认安装后中文编译乱码。查阅了一些文档，得知TexStudio其实是&lt;strong&gt;依赖texlive&lt;/strong&gt;的，底层的编译器如pdflatex等还是texlive的，宏包也是依赖texlive。所以要想顺利使用TexStudio，还是得先安装texlive,为了添加中文的支持，需要采用texlive提供的包管理工具安装中文相关的宏包。&lt;/p&gt;
+
+&lt;p&gt;下面为安装完成后的测试代码：&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-tex&quot; data-lang=&quot;tex&quot;&gt;&lt;span class=&quot;lineno&quot;&gt; 1&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;\documentclass&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;{&lt;/span&gt;article&lt;span class=&quot;nb&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;lineno&quot;&gt; 2&lt;/span&gt;     &lt;span class=&quot;k&quot;&gt;\usepackage&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;{&lt;/span&gt;CJKutf8&lt;span class=&quot;nb&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;lineno&quot;&gt; 3&lt;/span&gt;     &lt;span class=&quot;k&quot;&gt;\title&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;{&lt;/span&gt;hello&lt;span class=&quot;nb&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;lineno&quot;&gt; 4&lt;/span&gt;     &lt;span class=&quot;k&quot;&gt;\author&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;{&lt;/span&gt;xautjzd&lt;span class=&quot;nb&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;lineno&quot;&gt; 5&lt;/span&gt; 
+&lt;span class=&quot;lineno&quot;&gt; 6&lt;/span&gt;     &lt;span class=&quot;k&quot;&gt;\begin&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;{&lt;/span&gt;document&lt;span class=&quot;nb&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;lineno&quot;&gt; 7&lt;/span&gt;         &lt;span class=&quot;k&quot;&gt;\maketitle&lt;/span&gt;
+&lt;span class=&quot;lineno&quot;&gt; 8&lt;/span&gt;         &lt;span class=&quot;k&quot;&gt;\begin&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;{&lt;/span&gt;CJK&lt;span class=&quot;nb&quot;&gt;}{&lt;/span&gt;UTF8&lt;span class=&quot;nb&quot;&gt;}{&lt;/span&gt;gbsn&lt;span class=&quot;nb&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;lineno&quot;&gt; 9&lt;/span&gt;             宋体中文测试
+&lt;span class=&quot;lineno&quot;&gt;10&lt;/span&gt;         &lt;span class=&quot;k&quot;&gt;\end&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;{&lt;/span&gt;CJK&lt;span class=&quot;nb&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;lineno&quot;&gt;11&lt;/span&gt;         &lt;span class=&quot;k&quot;&gt;\begin&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;{&lt;/span&gt;CJK&lt;span class=&quot;nb&quot;&gt;}{&lt;/span&gt;UTF8&lt;span class=&quot;nb&quot;&gt;}{&lt;/span&gt;gkai&lt;span class=&quot;nb&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;lineno&quot;&gt;12&lt;/span&gt;             宋体中文测试
+&lt;span class=&quot;lineno&quot;&gt;13&lt;/span&gt;         &lt;span class=&quot;k&quot;&gt;\end&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;{&lt;/span&gt;CJK&lt;span class=&quot;nb&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;lineno&quot;&gt;14&lt;/span&gt;     &lt;span class=&quot;k&quot;&gt;\end&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;{&lt;/span&gt;document&lt;span class=&quot;nb&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;效果如下图所示：
+&lt;img src=&quot;/images/20150601-latex.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+</description>
+        <pubDate>Mon, 13 Apr 2015 00:00:00 +0800</pubDate>
+        <link>http://xautjzd.github.io/2015/04/13/install-texstudio-on-ubuntu.html</link>
+        <guid isPermaLink="true">http://xautjzd.github.io/2015/04/13/install-texstudio-on-ubuntu.html</guid>
+        
+        <category>LaTex</category>
+        
+        
+        <category>tech</category>
+        
+      </item>
+    
+      <item>
+        <title>将博客从Octopress迁移到Jekyll</title>
+        <description>&lt;p&gt;&lt;img src=&quot;/images/20150402.jpg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;使用Octopress已将近两年,主题换了两三个,也能达到随时随地写博客的基本需求,只是总感觉少了点什么,让人不太自在.最近我想我找到原因了,那便是不够简洁,不够稳定,操作不够方便,同时太过臃肿.当换到新环境后,可能会由于新环境所装Ruby版本或rake版本与clone下来的环境不匹配,出现一些令人意想不到的问题.其臃肿的程度更不必细说,从Octopress作者Brandom Mathis一席话中便能知晓:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Octopress is released as a single product, but it is a collection of plugins and configurations which are hard to disentangle. if you want to change or remove anything you are leaving the “golden path” and updates will be painful, if not impossible — short of copy and paste. Even I can not remove things from Octopress.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;!-- more --&gt;
+
+&lt;p&gt;通过观察clone下来的源码文件夹也能窥知其臃肿不堪.&lt;/p&gt;
+
+&lt;p&gt;我们要时刻具有反思与反问的精神.每做一件事情或一个决定时,问问自己为什么要这样做?当理清思绪明确目的后,便要思考该怎样做才是合适的,至于所选方式是否为最合适,已显得不是很重要,毕竟人生不可能永远走的是最短路径,难免会经历一些曲折.曲折也没什么不好,也许能欣赏到不一样的风景,收获不一样的感受.只有当自己感觉不满意或是了解了更好的方式时,才需要去寻求改变,否则stay
+still吧.&lt;/p&gt;
+
+&lt;p&gt;这方面自己还有待提高,往往在选择方式时思考太多,瞻前顾后,总试图最开始便找出best
+practise.在没找出前,决不会进行下一步工作.后来的一些经历使我改变了之前的看法,逐渐采取先尝试后决策的做法,这样往往有”山重水复疑无路,柳暗花明又一村”的感觉.尝试一种方法进行下去后,整个思路逐渐便的清晰起来,不再有之前一叶障目的困惑.&lt;/p&gt;
+
+&lt;p&gt;由Octopress换到Jekyll最大的原因是我无法了解Octopress的整个工作流程,文件太多,文档资料显得有点单薄,理解起来略费劲.而Jekyll刚好弥补了这些缺点,在这里不得不大赞Jekyll的文档,写的实在是太好了!非常容易便能找到自己想看的内容.同时Jekyll可定制化程度相当高,自己写插件也很方便.&lt;/p&gt;
+
+&lt;p&gt;此次迁移过程比较顺利,步骤也非常简单,只需如下几步便可完成:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;安装Jekyll: &lt;code&gt;$gem install jekyll&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;创建新博客: &lt;code&gt;$jekyll new Blog&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;拷贝Octopress文章到Jekyll&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;只需将之前Octopress的&lt;code&gt;source/_posts&lt;/code&gt;目录下的内容和&lt;code&gt;source/images&lt;/code&gt;目录下的图片拷贝到Jekyll新博客的&lt;code&gt;_posts&lt;/code&gt;目录和&lt;code&gt;images&lt;/code&gt;目录(需新建)即可.唯一麻烦的地方可能需要修改之前文章中的代码引用方式,Jekyll中采用liquid的highlight方式,而Octopress采用codeblocks方式.如果类似的文章有多篇需替换,那么最好写正则批量替换,否则真的是要改到手抽筋.&lt;/p&gt;
+
+&lt;p&gt;对我来说,Jekyll默认的主题便够用,虽说与我之前Octopress所用主题效果上相差很多,但够用就好.唯一令我不太满意的是字体的显示,对中文支持不太好,看着有点难受.后面再慢慢换,先这样将就着.至于评论、文章分类等,觉着意义不大,也便不花心思在上面了,等哪天有心思觉着有必要再添加吧.&lt;/p&gt;
+
+&lt;p&gt;改动地方较大的大致要数首页的显示了,默认首页只显示文章标题列表,我不太习惯这种方式,便修改成摘要预览的方式了.只需对index.html文件稍加修改便可.&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-html&quot; data-lang=&quot;html&quot;&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;div&amp;gt;&lt;/span&gt;
+    {% if post.content contains &amp;quot;&lt;span class=&quot;c&quot;&gt;&amp;lt;!-- more --&amp;gt;&lt;/span&gt;&amp;quot; %}
+        {{ post.content | split:&amp;quot;&lt;span class=&quot;c&quot;&gt;&amp;lt;!-- more --&amp;gt;&lt;/span&gt;&amp;quot; | first}}
+    {% else %}
+        {{ post.content | strip_html | truncatewords:300 }}
+    {% endif %}
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;然后只需在文章中相应位置添加&lt;code&gt;&amp;lt;!-- more --&amp;gt;&lt;/code&gt;即可.&lt;/p&gt;
+
+&lt;p&gt;有关预览的详细步骤,可参考:&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://truongtx.me/2013/05/01/jekyll-read-more-feature-without-any-plugin/&quot;&gt;http://truongtx.me/2013/05/01/jekyll-read-more-feature-without-any-plugin/&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Jekyll默认不提供创建post和page的模板,所以参考网上资料写了个post和page的task放在Rakefile中.新建post时只需用&lt;code&gt;rake
+post title=&quot;xxx&quot;&lt;/code&gt;的方式便能迅速创建一个post.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/20150402_oldblog.png&quot; alt=&quot;&quot; /&gt;
+    最后,附上一张之前Octopress博客的截图以示怀念.&lt;/p&gt;
+
+</description>
+        <pubDate>Thu, 02 Apr 2015 00:00:00 +0800</pubDate>
+        <link>http://xautjzd.github.io/2015/04/02/migrate-my-blog-to-jekyll.html</link>
+        <guid isPermaLink="true">http://xautjzd.github.io/2015/04/02/migrate-my-blog-to-jekyll.html</guid>
+        
+        
+      </item>
+    
+      <item>
+        <title>为什么而活？</title>
+        <description>&lt;p&gt;&lt;img src=&quot;/images/20141211.jpg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;这些天经常为毕设及论文的事发愁，也因此变得浮躁不安起来，失了方寸，失了往日的沉着心态。整个人犹如悬在空中，飘飘然，毫无状态可言，如行尸走肉般活着。而每到夜深，躺在床上，头脑却越发清晰，不自觉地开始思考人生。心中时不时有一个声音在问自己：&lt;strong&gt;为什么活着&lt;/strong&gt;？&lt;/p&gt;
+
+&lt;p&gt;如果在上小学以前，意义可能在于吃各种零食和玩各种新奇玩具；小学阶段，则希望身边有一堆玩伴，下课之余疯狂玩耍；初中阶段，则追求着时髦的穿着与发型及情窦初开的懵懂爱情；高中阶段，则处于挣扎彷徨之中，希望早日脱离被各种公式、概念与单词淹没的苦海，期待早日迎来老师口中描述的神圣而神秘的大学的那种自由生活。初入大学后，确实发现原来生活可以如此自由，不想上课就在宿舍闷头睡大觉，可以睡觉睡到自然醒而不用每天天不亮就起来背英语单词和文言文，不再有做不完的作业考不完的试，不再有班主任猥琐的监视，不再有想玩而不得的情景…&lt;/p&gt;
+
+&lt;!-- more --&gt;
+
+&lt;p&gt;可是，当过惯了这种闲云野鹤的日子，却发现自己开始迷失起来，生活开始变的漫无目的，站在人生的十字路口，每个方向都一眼看不到尽头，无所适从，该往哪迈自然成了思考的头等大事。好在乱走一通之后，大致明确了将要走的路，走着走着，也觉欢乐颇多，就这样一路跌跌撞撞走到大四。这时面临的选择有三：1. 保研 2. 考研 3. 工作。当时觉得自己都是要毕业的人了，却感觉连一门拿手绝活都不会，这怎么能出去混江湖？于是果断排除选项3，当时”研究生”(仅指硕士)三个字提起来便觉高大上，成为研究生一定不得了，便朝着心中的高端行列走去，开始了复习考研生活。复习了一段时间，突然确定可以保研了。心想，都是研究生，在哪上不是上，凭什么自己学校的研究生水平就低人一等，再加上考虑风险及家庭经济等因素，最终选择了保研。觉得上个研究生，一定能妥妥掌握一门绝技，这样行走江湖都不用害怕。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;理想太过于丰满，而现实往往太过于骨感&lt;/strong&gt;。最终理想完败，被现实牢牢踩在脚下。临近毕业了，也算大致体验过了一番研究生生活，发现其实研究生也就那回事，只有亲身经历过才能体会个中滋味。不敢说研究生的论文全是bull shit，不过大部分应该算吧。如果有觉冤屈的，我想问一问：当初你为什么选择这个课题？它有什么实际的意义？如果你能理直气壮拍着胸脯说出一二来，那么请自动将自己归为那小部分。&lt;/p&gt;
+
+&lt;p&gt;这里，不是要喷研究生水平，而是想问一问：你为什么要上研究生？当时我上研究生一是想通过三年的研究生生活提升自己的技能，当然技能有所提升，不过自觉与同样上班三年的差距略大；二是想着念个研究生，起点一定更高，工作一定更好找，待遇会更高(当然这也几乎是事实)。不过如果仅是为了以上这些目的，我倒觉得显得没有必要，毕竟技术方面，只要去个差不多的公司，提升会更大；薪资方面，只要能力提升上来了，自然也不会低，如果要是混日子的心态，那就另说了。如果想进国企，那么就上研吧，不然很难踏进这个门槛。&lt;/p&gt;
+
+&lt;p&gt;为什么活着？心底无数次问自己这个问题，却怎么也回答不上来。&lt;strong&gt;为了给家人一个满意的交代？为了收获一份白首不相离的爱情？为了成就一番众人啧啧称羡的事业？亦或只是为了无愧于心，获得内心的那份愉悦？&lt;/strong&gt;曾经一度幻想过效仿古人隐居山林，过着”晨兴理荒秽，带月荷锄归”的生活，但也只是想想罢了，现实情况不太允许。身处互联网时代，不知是喜是悲。喜的是：有了网络，获取信息变得更容易，生活更方便；悲的是：在这个快节奏的社会里，凡事只要投入，便期待最好立竿见影，否则就pass掉。身处这样一个物欲横流、金钱至上、唯利是图的社会，大多都在为生计奔波，丝毫没有多余的精力去思考活着的意义，闲暇之余立马便想着逛街、看电影、刷微博微信等，因为难以忍受停下来时心灵的恐慌、内心的空虚。&lt;/p&gt;
+
+&lt;p&gt;本来&lt;strong&gt;学习知识的目的是为了更好的思考这个世界&lt;/strong&gt;，结果却演变为：学习知识是为了更好的追求名与利、权与钱。但不得不承认的是原本的目的确实是达到了，通过知识更好地了解了社会的规则，便利用已知信息更好地为自己谋福利。并不是说谋福利本身有错，而是说在谋福利的过程中开始迷失自我，本末倒置，忘却了原来谋福利只是一个过程，追求内心的愉悦与无愧于心才是最终的目的。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;尾记&lt;/strong&gt;：写这篇博文主要源自午睡时的一些想法及搁置内心已久的一个疑问，同时也想到了刘未鹏所表达的《写博客是为了更好的思考》。&lt;/p&gt;
+</description>
+        <pubDate>Thu, 11 Dec 2014 15:47:00 +0800</pubDate>
+        <link>http://xautjzd.github.io/2014/12/11/why-we-live-in-this-world.html</link>
+        <guid isPermaLink="true">http://xautjzd.github.io/2014/12/11/why-we-live-in-this-world.html</guid>
+        
+        
+        <category>life</category>
+        
+      </item>
+    
+      <item>
+        <title>自由软件与开源软件</title>
+        <description>&lt;p&gt;&lt;img src=&quot;/images/20141120.jpg&quot; alt=&quot;&quot; /&gt;
+图为电影《The Shawshank Redemption》的海报&lt;/p&gt;
+
+&lt;p&gt;昨晚与张老师还有几位Linux小组成员一起去西邮参加了一个开源者行的活动，演讲嘉宾有GitCafe和Thoughtworks的人员。其实这次去只是想感受感受开源的气氛，一直听说西邮的开源气氛不错，未能亲身感受，所以趁还在西安，赶紧体会体会。这次最大的收获当属对开源文化的重新认识，也重新理解了free software与open source software的异同。&lt;/p&gt;
+
+&lt;p&gt;首先，free software的最初版本由Richard Stallman起草，并通过Free Software Foundation发布，其初衷是确保最终用户能够自由使用、学习、分享和修改软件。要理解free software的概念，得先理解其中”free”里的含义，这里的”free”并不是”free of charge”中的含义，而是”free speech”中”free”表示的意思。&lt;/p&gt;
+
+&lt;p&gt;通常所说的free software包含以下四种自由：&lt;/p&gt;
+
+&lt;!-- more --&gt;
+
+&lt;h3 id=&quot;freedom-0&quot;&gt;1. freedom 0&lt;/h3&gt;
+
+&lt;p&gt;如你期望的那样自由地运行那个程序&lt;/p&gt;
+
+&lt;h3 id=&quot;freedom-1&quot;&gt;2. freedom 1&lt;/h3&gt;
+
+&lt;p&gt;能够自由地查看源代码,研究软件是如何工作的，并可随意修改，为你所用。&lt;/p&gt;
+
+&lt;h3 id=&quot;freedom-2&quot;&gt;3. freedom 2&lt;/h3&gt;
+
+&lt;p&gt;可以重新发布原软件，以帮助周围其他人。&lt;/p&gt;
+
+&lt;h3 id=&quot;freedom-3&quot;&gt;4. freedom 3&lt;/h3&gt;
+
+&lt;p&gt;能够重新发布你修改过的程序，以使整个社区都能够从你的修改版本中受益。你可以选择免费，也可以选择收费。&lt;/p&gt;
+
+&lt;p&gt;而open source software的标准则由Eric S. Raymond和Bruce Perens发布，更偏向于开放源代码的意思，更多的限于技术层面。Richard Stallman还表示：当你听到”free software”，更多的应该是想起自由(freedom)，而不是价格(price)，并多指的是精神层面的自由，而”open source”则绝不会让人联想到自由的概念。&lt;/p&gt;
+
+&lt;p&gt;我想这也是开源软件与自由软件二者之间的最大区别吧。&lt;/p&gt;
+
+</description>
+        <pubDate>Thu, 20 Nov 2014 22:50:00 +0800</pubDate>
+        <link>http://xautjzd.github.io/2014/11/20/difference-between-free-software-and-open-source-software.html</link>
+        <guid isPermaLink="true">http://xautjzd.github.io/2014/11/20/difference-between-free-software-and-open-source-software.html</guid>
+        
+        
+        <category>life</category>
+        
+      </item>
+    
+      <item>
+        <title>自我解剖</title>
+        <description>&lt;p&gt;&lt;img src=&quot;/images/20140622.jpg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;文字的力量着实强大，但对我这个不善言语的人来说，使用起来略困难，难以透过文字准确阐释心中所思所想及所憧憬的未来生活。所以在写之前，便仔细筛选了上面这张图片，大概反应了我对于未来几十年后垂垂老矣的自己所憧憬的生活吧,因为垂钓在我童年生活中占据了不可估量的分量，至今仍难以忘怀，也是我生命中难得主动喜欢的一项兴趣爱好了。突然想到了海子的《面朝大海，春乱花开》：&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;从明天起，做一个幸福的人&lt;br /&gt;
+喂马、劈柴，周游世界&lt;br /&gt;
+从明天起，关心粮食和蔬菜&lt;br /&gt;
+我有一所房子，面朝大海，春暖花开&lt;br /&gt;
+从明天起，和每一个亲人通信&lt;br /&gt;
+告诉他们我的幸福&lt;br /&gt;
+那幸福的闪电告诉我的&lt;br /&gt;
+我将告诉每一个人&lt;br /&gt;
+给每一条河每一座山取一个温暖的名字&lt;br /&gt;
+陌生人，我也为你祝福&lt;br /&gt;
+愿你有一个灿烂的前程&lt;br /&gt;
+愿你有情人终成眷属&lt;br /&gt;
+愿你在尘世获得幸福&lt;br /&gt;
+我只愿面朝大海，春暖花开&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;!-- more --&gt;
+
+&lt;h2 id=&quot;section&quot;&gt;憧憬&lt;/h2&gt;
+
+&lt;p&gt;我只希望在我垂暮之年，能够面朝大海，悠然垂钓即可。即使没有大海，湖、水库亦或池塘等任何有水有鱼的地方皆可。该憧憬的憧憬完了，接下来便是自我解剖时刻。&lt;/p&gt;
+
+&lt;p&gt;昨天丰裕口烧烤归来途中，便已顿生困意，加之返程中一个多小时公交的无座状态和前晚陡然的仰卧起坐和俯卧撑，弄的身心疲惫，便早早睡了。今天上午感觉还是没完全“康复”,中午的这一午睡终于算是元神回窍，下午便有经历思考人生了，便萌生了自我解剖的想法。&lt;/p&gt;
+
+&lt;p&gt;细细想来，突然发现自己从小到大由自己由衷喜欢的东西有三个：一是钓鱼，二是游泳，三是编程。也许还有其他，但印象中记忆深刻并现在可道出的只有这三儿。能随意道出必然是爱它爱的深沉。如果不确定是否爱它，那么请远离一段时间，看看过段时间后你是否会时常想起。&lt;/p&gt;
+
+&lt;h2 id=&quot;section-1&quot;&gt;垂钓&lt;/h2&gt;
+
+&lt;p&gt;如今，已记不清自己第一次垂钓是何时，或是小学，亦或初中。那个时候，没钱买钓竿，便到我们村唯一的竹林偷砍一根，去掉细枝，如果主干不是很直的话，点起蜡烛，用烛火烤烤就会好很多，顺带隔几节熏一个黑圈，也看着美观多了。线和鱼钩超出自制的范围，所以只能掏钱买了，浮漂随便拾一根鸡毛便可搞定，如果难以寻到，那么大蒜头的那根主干也能派上用场。至于鱼饵，和点面粉加点菜籽油或者拿着锄头到处挖红色小蚯蚓便搞定了。由于附近能钓鱼的地方都被乡人承包，所以为了钓鱼顺利进行，即使被承包，也要冒着被逮的风险进行到底。同是乡人，最坏的情况也只是没收钓竿，并找父母说理。当时年龄还小，所以不是很在意。后来慢慢长大了，也便不好意思再去了，毕竟同是一乡人，抬头不见低头见。后来来北方这边上大学，也不似家里方便，钓鱼还得重新制备工具，甚是麻烦，也便搁置了。不过依稀记得大一暑假回家还钓过。&lt;/p&gt;
+
+&lt;p&gt;作为为数不多的几个主动喜欢的兴趣之一，我却很少向人提起，一是没有氛围，二是没有必要,大家知道的是我喜欢吃鱼而已。至于我为什么喜欢钓鱼，我自己都很难说清缘由，可能是喜欢钓鱼时，微风吹过，水面泛起的涟漪；或是喜欢钓鱼时，微风拂面的惬意；亦或是等待鱼儿上钩时的那种守候感、浮漂晃动的兴奋及将鱼成功钓起的成就感…&lt;/p&gt;
+
+&lt;h2 id=&quot;section-2&quot;&gt;游泳&lt;/h2&gt;
+
+&lt;p&gt;第一次游泳应该是上小学时，村里可供玩耍的地方不多，老少皆宜的更属凤毛麟角，而村里的那个大池塘当属首推。我能学会游泳，这个池塘功不可没。虽然在家长眼中，游泳是件危险的举动，但我很庆幸我妈当年没有对我下禁止令，否则我今天很可能依然是个旱鸭子。我妈之所以能够放心我游泳，应该也与村中善水者较多有直接关系，夏天每次将近黄昏时，池塘边便充斥着各种欢笑尖叫声，而不少早已畅游其中，当然以青少年居多。不会游泳的人，便拿着汽车内胎当作游泳圈。正是这种环境导致我们村的孩子们大多都会游泳，不会的大部分都是曾经遭到父母或爷爷奶奶们的极度封杀导致。不过随着环境污染的“普及”,这间一亩有余的池塘最终也未能幸免于难，现在水质已经完全便绿,可谓惨不忍睹。&lt;/p&gt;
+
+&lt;h2 id=&quot;section-3&quot;&gt;编程&lt;/h2&gt;
+
+&lt;p&gt;从2008年初次接触到现在已有6年时光，却还对初次接触颇有印象。毕竟与之前学到的东西差异太大，一时之间难以理解，消化起来有点难度，那种感觉无异于古代人见到手机的情形。上来就上的C语言，一听这名字，想着与语文英语等类似吧，毕竟同是语言，后来才发现这语言语法略诡异，毕竟其他都是与人沟通，而它却是与机器交流。上完后感觉好多了，现在学习了解过的语言有c/c++, java, ruby, c#， javascript, vimscript和shell script。只要了解了一门，其他语言都是大同小异，起码学习起来不至于那么困难。这也是我为数不多主动喜欢钻研的三者之一。&lt;/p&gt;
+
+&lt;h2 id=&quot;section-4&quot;&gt;弊端解剖&lt;/h2&gt;
+
+&lt;p&gt;乒乓球虽然也是我所喜爱的运动之一，但却是得益于以前一位高中同学。自高中以前，学校根本没有乒乓球场地，所以也根本没机会接触。上高中后，体育课有乒乓球与篮球，但也是自由活动课，不过总算是有场地有器材，虽然比较烂，但总比没有好。加上高中的紧张生活，一月放一次假的状态下，总得有调节大脑转移学习注意力的东西。这时，在同班同学的引领下，选择了乒乓这项运动，虽然初始一直是被虐的对象，但随着努力练习，逐步也落入到大家认可的地步。只是进入大学后，身边没有人喜欢打乒乓球，也逐渐荒废了。&lt;/p&gt;
+
+&lt;p&gt;而网球、羽毛球的兴趣则是受到教研室张师兄的影响。虽然他只关注李娜，而我则偏向男单，喜欢费德勒打球的优雅与无论输赢的那种淡定，喜爱小德的出众攻防转换能力及完美的身体协调性，敬佩纳豆对每场比赛的执着与每球必争的拼劲。他们之间的较量不仅是一场视觉盛宴，更像是人生态度的完美展现。而羽毛球则是上研以后的主打运动了，一是有同伴一起打，二是教研室有这氛围，老师出钱给我们订场地。羽毛球作为教研室集体娱乐的活动，我都会积极加入，不管技术水平如何。从开始的菜鸟，甚至连球都不太会发，到现在打的凑合，感觉也进步了很多。&lt;/p&gt;
+
+&lt;p&gt;仔细想来，这几项都是受旁人影响而对其认识有所改观，通过这些外在的表现，感觉自己当属被动型性格的一类人，很少会去左右他人的思想，影响他人的所思所想，而通常充当被影响的角色，但同时又常常排斥这种情况的出现。而自己由衷喜欢的几项，却鲜有影响他人的，要说影响最多，估计算编程了,感觉在编程方面，还是对身边的同伴有不小影响。庆幸自己不是销售人员，否则估计到哪哪破产。&lt;/p&gt;
+
+&lt;h2 id=&quot;section-5&quot;&gt;收尾的话&lt;/h2&gt;
+
+&lt;p&gt;本来下午已经构思好，要写自我剖析，结果刚写到弊端解剖时，便被老师打断了思路，等再回来，结果思路全无，就这样收尾了吧。从明天起，逐渐培养自己的积极主动性，传播正能量！&lt;/p&gt;
+</description>
+        <pubDate>Sun, 22 Jun 2014 16:24:00 +0800</pubDate>
+        <link>http://xautjzd.github.io/2014/06/22/introspection.html</link>
+        <guid isPermaLink="true">http://xautjzd.github.io/2014/06/22/introspection.html</guid>
+        
+        
+        <category>thinking</category>
+        
+      </item>
+    
+      <item>
+        <title>有关Markdown的两款工具介绍</title>
+        <description>&lt;p&gt;&lt;img src=&quot;/images/20140524.jpg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;自从接触markdown这款简洁到不能再简洁的语法以来，我已经深深地喜欢上它，并在各种场合尝试使用它，比如说现在的博客、Evernote笔记、演示文档等。而今又发现一款新工具，采用markdown语法写邮件，现在几乎任何码字场合都能见到markdown的身影。&lt;/p&gt;
+
+&lt;p&gt;我一直将自己归为工具控一类，作为一名程序员，编码水平三流，码字水平不入流，但确是重度工具控。每次都会为发现有趣华丽的工具而兴奋，不把玩一番便不快。言归正传，markdown真有那么好么？让人迷恋的地方在哪？&lt;/p&gt;
+
+&lt;p&gt;当你向朋友推荐时，可能这是经常会被问到的问题，而且会问：word/wps已经很强大，为什么还要选择markdown?难道它比word更厉害?…&lt;/p&gt;
+
+&lt;p&gt;下面我谈谈自己对markdown的认识及我为何选择markdown的原因。&lt;/p&gt;
+
+&lt;!-- more --&gt;
+
+&lt;p&gt;word/wps功能的确强大，但正是因为太过强大，反而令人无法专注。每次在word中码字时，都会思考如何排版才能使文档更加美观，这对那些完美主义、有重度选择症的人来说,这一选择过程太过痛苦而费时。在这个浮躁而眼花缭乱的世界，需要简洁，需要专注。而markdown刚好迎合这种需求，极简的语法，相信大家可以在10分钟搞定，而这也是我迷恋它的原因。&lt;/p&gt;
+
+&lt;p&gt;有关markdown语法，请参考：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;http://daringfireball.net/projects/markdown/basics&quot;&gt;markdown官网&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://wowubuntu.com/markdown/&quot;&gt;markdown语法说明&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://jianshu.io/p/q81RER&quot;&gt;献给写作者的markdown新手指南&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;另一原因是版本管理很方便，通过Git可以很方便的管理，而且只要不是私密内容，都可以免费方便地托管在GitHub上。用word的话，电脑里面不知道会存在多少个word版本。&lt;/p&gt;
+
+&lt;p&gt;最后一个原因是团队协作很便捷。如果多人共同撰写某一文档，只需要将其托管在GitHub(或者其他的托管平台)上，然后协作者每人clone一份，在本地完成各自的部分，完成后先pull再push上去。最后一份完整的文档便完成了，如果采用word，得手动copy其他成员内容到自己的版本里，然后将拷贝后的文档再分别发给团队其他成员，这样不把人弄疯了才怪。&lt;/p&gt;
+
+&lt;p&gt;基于以上原因，选择了markdown，既然熟悉了这门技能，为何不将其用于其他地方呢？这样，又发现了有关markdown的两款工具，比较实用，介绍给大家。&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;http://markdown-here.com&quot;&gt;markdown-here&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;markdown-here是一款用markdown撰写邮件的工具，在Chrome、FireFox、Safari、Opera等浏览器中以插件呈现，另外也可用于Thunderbird、Postbox。&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://chrome.google.com/webstore/detail/copy-as-markdown/fkeaekngjflipcockcnpobkpbbfbhmdn&quot;&gt;Copy as markdown&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;这是一款Chrome插件，所以要使用，得先有chrome环境。其功能是将Chrome的Tab以markdown的形式拷贝在系统的剪切版中，然后粘贴到目的地即可。有两种选择：1. 拷贝Current Tab 2. 拷贝所有的Tabs。&lt;/p&gt;
+
+&lt;h2 id=&quot;section&quot;&gt;参考文档&lt;/h2&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;a href=&quot;http://www.yangzhiping.com/tech/markdown-tips.html&quot;&gt;markdown小技巧&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://www.yangzhiping.com/tech/r-markdown-knitr.html&quot;&gt;markdown协作浅谈&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+</description>
+        <pubDate>Sat, 24 May 2014 14:54:00 +0800</pubDate>
+        <link>http://xautjzd.github.io/2014/05/24/introduction-of-two-tools-about-markdown.html</link>
+        <guid isPermaLink="true">http://xautjzd.github.io/2014/05/24/introduction-of-two-tools-about-markdown.html</guid>
+        
+        
+        <category>tech</category>
+        
+        <category>tool</category>
+        
+      </item>
+    
+      <item>
+        <title>Unix C的文件指针与文件描述符</title>
+        <description>&lt;p&gt;&lt;img src=&quot;/images/20140521.jpg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;AISC C中通常用文件指针FILE *进行文件的操作，如fopen, fclose, fread, fwrite, fscanf, fprintf等函数，都是通过文件指针进行文件的一系列操作；而类Unix系统则大多用文件描述符(file descriptor)进行文件的操作，如open, close, read, write等函数，文件描述符是一个整数，是文件描述符表(file descriptor table)中的索引(文件描述符表其实是维护进程打开的文件)。当进程打开或者创建一个文件，内核便会在此进程对应的文件描述符表中分配一个位置，然后便可通过文件描述符操作文件。&lt;/p&gt;
+
+&lt;!-- more --&gt;
+
+&lt;p&gt;在内核中，每个进程都拥有自己的文件描述符表，表示此进程已打开的所有文件。文件描述符表中每一项其实是一个指针，指向文件表(file table)中用于描述打开文件的数据块——file对象，file对象其实是一个file结构体，有关file结构体的定义，请参考:include/linux.fs.h文件。file结构体包含了文件的打开模式、读写位置等重要信息，当进程打开一个文件时，内核便会创建一个新的file对象。这里要注意的是,file对象不专属于某个进程，不同进程的文件描述符表中的指针可以指向相同的file对象，从而达到共享打开的文件。file对象有引用计数，记录引用这个对象的文件描述符个数，只有当引用计数为0，内核才会销毁该file对象，所以某个进程关闭文件，并不影响与之共享同一个file对象的进程。file对象中包含一个指针，指向dentry对象。dentry对象代表一个独立的文件路径，如果一个文件被打开多次，那么便会建立多个file对象，但他们都指向同一个dentry对象。&lt;/p&gt;
+
+&lt;p&gt;dentry对象又包含一个指向inode对象的指针。inode对象代表一个独立的文件，因为存在硬链接与符号链接，因此不同的dentry对象可以指向同一个inode对象，inode对象包含最终对文件进此操作所需的所有信息，如文件系统类型、文件操作方法、文件权限、访问日期等。&lt;/p&gt;
+
+&lt;p&gt;打开文件后，返回的文件描述符实质上是文件描述符表的索引，根据索引对应的指针访问对应的file对象，然后根据file对象访问对应的dentry，根据dentry对应的inode，从而实现文件的操作。&lt;/p&gt;
+
+&lt;h2 id=&quot;section&quot;&gt;转换关系&lt;/h2&gt;
+
+&lt;p&gt;有关文件指针与文件描述符及文件路径(包含文件名)之间的转换关系如下：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;文件路径-&amp;gt;文件指针: filepath–fopen()–&amp;gt;FILE *;&lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;文件路径-&amp;gt;文件描述符: filepath–open()–&amp;gt;fd;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;文件描述符-&amp;gt;文件指针: fd–fdopen()–&amp;gt;FILE *;&lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;文件描述符-&amp;gt;文件路径: fd–readlink(/proc/%getpid()/fd/%fd)–&amp;gt;filepath;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;文件指针-&amp;gt;文件描述符: FILE *–fileno()-&amp;gt;fd;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;下面通过一个例子展示文件描述符与文件指针间的关系:&lt;/p&gt;
+
+&lt;p&gt;```c
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;&lt;/unistd.h&gt;&lt;/stdio.h&gt;&lt;/p&gt;
+
+&lt;p&gt;int main(char **argv, int argc)
+{
+	int fd;
+	FILE *fp;
+	char proclnk[255];
+	char filepath[255];&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# test.txt为已存在的文件
+fp = fopen(&quot;test.txt&quot;, &quot;r&quot;);
+if (fp != NULL) {
+	fd = fileno(fp);
+	sprintf(proclnk, &quot;/proc/self/fd/%d&quot;, fd);
+	readlink(proclnk, filepath, 255);
+	
+	printf(&quot;fp-&amp;gt;fd-&amp;gt;filepath: %p-&amp;gt;%d-&amp;gt;%s\n&quot;, fp, fd, filepath);
+}
+
+return 0; } ```
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+        <pubDate>Wed, 21 May 2014 09:59:00 +0800</pubDate>
+        <link>http://xautjzd.github.io/2014/05/21/file-pointer-and-file-descriptor-about-c.html</link>
+        <guid isPermaLink="true">http://xautjzd.github.io/2014/05/21/file-pointer-and-file-descriptor-about-c.html</guid>
+        
+        
+        <category>c</category>
+        
+      </item>
+    
+      <item>
+        <title>Ruby环境的搭建</title>
+        <description>&lt;p&gt;&lt;img src=&quot;/images/20140518.jpg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;ruby&quot;&gt;Ruby简介&lt;/h2&gt;
+
+&lt;p&gt;第一次听到Ruby这个名词，可能会比较陌生，进而产生畏惧，毕竟在中国这片区域普及率还不是很高，但在世界范围内还是有不错的影响力，如果有所质疑，可以参考&lt;a href=&quot;http://www.tiobe.com/index.php/content/paperinfo/tpci/index.html&quot;&gt;TIOBE&lt;/a&gt;上Ruby的排名情况，进几年一直在前10左右徘徊。到目前为止，大家可能只了解到Ruby是一门编程语言，具体还未做了解，那这里引用&lt;a href=&quot;https://www.ruby-lang.org/en/&quot;&gt;Ruby官网&lt;/a&gt;的解释，供大家参考：&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Ruby is a dynamic, open source programming language with a focus on simplicity and productivity. It has an elegant syntax that is natural to read and easy to write.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;用再多的语言描述都略显苍白，只有身临其中把玩一番才能有所体会，而且这种感触才最直观，最有说服力。这里，贴出一个网址，便可在浏览器中体验Ruby之美：&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;&lt;a href=&quot;http://tryruby.org/levels/1/challenges/0&quot;&gt;http://tryruby.org/levels/1/challenges/0&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;请感受它的魅力所在吧。&lt;/p&gt;
+
+&lt;!-- more --&gt;
+
+&lt;h2 id=&quot;section&quot;&gt;操作系统&lt;/h2&gt;
+
+&lt;p&gt;Ruby是跨平台的语言，所以Windows、Linux和Mac OS X都可安装，但不建议在Windows上搭建环境。如果身边确实没有Linux/Mac OS X环境，那么也可选择Windows。之所以不推荐Windows，原因有以下几点：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Ruby/Rails在Windows上比较慢&lt;/li&gt;
+  &lt;li&gt;一些gems和libraries在Windows环境不工作&lt;/li&gt;
+  &lt;li&gt;社区大多使用Mac/Linux,如果在Windows环境使用出现问题可能难以解决&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;所以尽量选择Linux/Mac。强烈建议新手选择Ubuntu，网上这方面的教程较多，碰到问题也容易解决。没有还没有Linux环境，并且对Linux系统不熟悉，那么建议先在虚拟机下安装Linux。虚拟机的选择有：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Virgrant&lt;/li&gt;
+  &lt;li&gt;VirtualBox&lt;/li&gt;
+  &lt;li&gt;VMware&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;以下教程主要针对Linux/Mac用户，如果实在要选择Windows，那么请在&lt;a href=&quot;https://www.ruby-lang.org/zh_cn/downloads/&quot;&gt;此处&lt;/a&gt;下载Windows下的二进制安装包RubyInstaller。&lt;/p&gt;
+
+&lt;h2 id=&quot;rvm&quot;&gt;1. 安装RVM&lt;/h2&gt;
+
+&lt;p&gt;RVM(Ruby Version Manager)是一个使安装、管理和多个Ruby环境切换变得简单的命令行工具。通过它安装不同版本的Ruby环境和gems包变得简单容易。更为详细的解释，请参考&lt;a href=&quot;https://rvm.io/&quot;&gt;RVM官网&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;
+$ \curl -sSL https://get.rvm.io | bash -s stable
+&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;也可一步到位，直接安装RVM的同时安装上Ruby:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;
+$ \curl -sSL https://get.rvm.io | bash -s stable --ruby=2.1.2
+&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;其中，&lt;code&gt;2.1.2&lt;/code&gt;为指定的Ruby版本，当然也可省略版本号。安装完成后，重新加载RVM环境，使其配置有效。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;
+$ source ~/.rvm/scripts/rvm
+&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;接下来检查下RVM是否安装成功：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;
+$ rvm -v
+&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;如果显示&lt;code&gt;rvm xxx(stable) by Wayne E. ....&lt;/code&gt;等信息便说明安装成功。&lt;/p&gt;
+
+&lt;h2 id=&quot;rvmruby&quot;&gt;2. RVM安装Ruby环境&lt;/h2&gt;
+
+&lt;p&gt;&lt;code&gt;
+$ rvm install 2.1.2
+&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;安装过程可能比较漫长，耐心等待即可，编译安装完成后，Ruby和Ruby Gems也就安装成功。&lt;/p&gt;
+
+&lt;h2 id=&quot;ruby-1&quot;&gt;3. 设置Ruby版本&lt;/h2&gt;
+
+&lt;p&gt;&lt;code&gt;
+$ rvm use 2.1.2 --default
+&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这里, &lt;code&gt;2.1.2&lt;/code&gt;为前面安装过的Ruby版本。&lt;/p&gt;
+
+&lt;p&gt;这时，可以检查是否正确安装配置：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;
+$ ruby -v
+&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;
+$ gem -v
+&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;如果要安装&lt;code&gt;Rails&lt;/code&gt;，直接通过：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;
+gem install rails
+&lt;/code&gt;
+便可完成安装。更多有关&lt;code&gt;gem&lt;/code&gt;的命令，请通过:&lt;code&gt;gem --help&lt;/code&gt;查询。&lt;/p&gt;
+</description>
+        <pubDate>Sun, 18 May 2014 11:50:00 +0800</pubDate>
+        <link>http://xautjzd.github.io/2014/05/18/build-ruby-environment.html</link>
+        <guid isPermaLink="true">http://xautjzd.github.io/2014/05/18/build-ruby-environment.html</guid>
+        
+        
+        <category>ruby</category>
+        
+      </item>
+    
+      <item>
+        <title>有关实习的一些感受</title>
+        <description>&lt;p&gt;&lt;img src=&quot;/images/20140505.jpg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;前几天看了一篇文章，现在依然清晰的记得其中大意：&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;人一生其实很短暂，只有30000天左右可供挥霍，所以请认真地对待每一天，抓紧时间做自己想做的事，不要给今后留有遗憾。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;细细思索一番，我的人生已过1/3，而其中的大部分时间却没有主动选择自己想过的生活，没有走自己想走的路，顿时心生悲哀，失落之情不禁涌上心头。二十五载的不断尝试、不断摸索，终于找准了自己人生的方向，已是万幸，接下来便是坚定不移的走下去了。也许随着年龄的增长，眼界心界不断改变，方向也会随之变化，这我无法左右，未来的事谁能说的准。唯一能做的就是坚定不移的走当前已确立的路，同时记录自己人生的历程，以此慰藉当前的心，同时也算是给未来的自己留一扇观察当前自己的窗。&lt;/p&gt;
+
+&lt;p&gt;一月之余不写博客了，感觉无从写起。生活太过平淡，太过安逸，以致没有什么可值得念叨值得回味的故事，唯一记忆较深的当属实习之事了。自从12年上半年接触Ruby以来，一直断断续续的学习，时而放下，时而拾起。就在上上周(4.25号左右)，无意在RubyChina上看到一则西安Ruby&amp;amp;Rails实习生招聘的信息，而且对实习生的技能要求我也符合，便给他们回邮件并附上自己简历，过了不到一天便给我回复让我去聊聊。听到“聊聊”这词，以为只是搞技术的人之间相互交流，不需要再带纸质简历什么的。结果刚到之后，公司前台人员直接来一句：“你带了简历么？”，我顿时伤了，心想电子简历都给你们发了，不一样么，还带什么纸质简历，经过这次算是长知识了。由于是小公司，老板是搞技术的，所以直接和老板聊的。聊完之后便让填个人基本信息，在填的过程中发现来了Rubyists圈子的一位朋友也来应聘，而且也是Rails,我俩的不同就是我是实习，他是正式。只想说西安Rubyists圈子很小，我了解认识的Thoughtworks大概占了70%以上，剩下的就是当作业余爱好来学习的，比如我。&lt;/p&gt;
+
+&lt;!-- more --&gt;
+
+&lt;p&gt;投这次实习，主要原因大致有以下几点：&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;提升自己的Ruby&amp;amp;Rails水平&lt;/li&gt;
+  &lt;li&gt;教研室现阶段事情不多&lt;/li&gt;
+  &lt;li&gt;想赚点money&lt;/li&gt;
+  &lt;li&gt;阻止自己继续懒下去&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;最后确定录用，而且给的薪资还不错(虽说招聘启事是4-8k,但最终3k)，还暗自窃喜了一番。但开始去实习后,完全与自己心中所想不一致。没有人带，直接扔给一个项目，自己单独开发，顿时头大，完全没有Rails项目经验，只不过把《Rails Tutorials》和《Agile web development with Rails》大致过了一遍，官方的文档大致过了几遍而已。没办法，只得硬着头皮上，给的期限是一周。分的是27寸的Mac,由于是第一次使用，连带环境工具什么的摸索了一天。数据库的设计大致花了一天多的时间。再待了两天，边摸索边开发。老板受不了这样的开发进度和低产出，这样待下去我的技术也不会有多大的提高，最后只有选择结束。&lt;/p&gt;
+
+&lt;p&gt;通过这次为期大致一周的实习，还是收获了不少。主要有以下几点:&lt;/p&gt;
+
+&lt;h3 id=&quot;section&quot;&gt;1. 不要太过于相信招聘信息&lt;/h3&gt;
+
+&lt;p&gt;我看到的招聘信息如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;办公环境&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;开放式办公&lt;/li&gt;
+  &lt;li&gt;27英寸mac一体机或15寸mac pro+27寸宽屏显示器任选。&lt;/li&gt;
+  &lt;li&gt;全年多次周边/国内旅游度假&lt;/li&gt;
+  &lt;li&gt;楼下体育场，公司提供免费运动场地（羽毛球等）&lt;/li&gt;
+  &lt;li&gt;五险一金+双休（特殊赶进度会偶尔周六加班，但绝不是周周加班，并且也不会特别多加班）&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;strong&gt;职位名称：Ruby/Rails实习生&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;薪资待遇：4k-8k 、 五险一金 、 双休
+招聘人数：3名
+岗位职责：负责WEB/APP的后台程序编写&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;技术要求：&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;至少熟悉一门面向对象语言，并热衷于学习新技术。&lt;/li&gt;
+  &lt;li&gt;熟悉基本的数据库操作。&lt;/li&gt;
+  &lt;li&gt;熟悉Mac/Linux操作系统，熟悉Git开发流程。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;现在我来解读下:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;一体机/pro任选
+入职后直接分的是一体机，没有选择，不过这不重要，只是有点欺骗感情罢了。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;全年多次周边/国内旅游度假
+多次？几次称为多次？不要受迷惑了，一年有4次都不错了。还不如写清具体数字来的实在。我想不写清楚大致是因为公司本身是做旅游相关的，景点系统出现问题过去维护算是旅游吧，但据说去了之后听员工说忙死的节奏。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;免费提供运动场地
+貌似看到发了一条征求中午打球的消息。中午12点下班，下午1:30上班，吃饭都得至少30分钟吧，哪还有时间打球？反正我去的一周中没见到有员工去打球的。周末有没有不知道，再说周末休息，谁吃饱撑的去公司附近打球？&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;加班问题
+由于我是5.1前几天去的，所以周末肯定加班了，至于平时有没有加班，便无从得知。唯一了解的是工作日每周都加班，下班时间是下午6点。但到点后几乎没人离开，所以我每次都会差不多6：20才离开，每次差不多算是下班前5名了。至于他们什么时候走我不知道，也没问过。唯一能确定的是实习这段时间内一直都在加班，从未停止过。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;实习生待遇问题
+招聘上写的是实习4-8k，当时去的时候心里便想：小公司怎么可能这样大方？后来谈好后，他直接来一句：你期望的薪资是多少？完全没有应对这样问题的经验，真想说你们招聘上不是有规定么？但没好意思说，直接来了句：2k。最后给了我3k,还说什么你要求的是2k，我们给了你3k,这是我们公司的制度什么的，言外之意就是说我们公司还是很人性化的。我好感恩戴德啊！山里出来的终于长知识了。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;技能要求
+不要被公司所提的技能要求所蒙蔽，这是最低门槛，但不仅限于此。也不代表满足这些要求便能被聘用。公司当然希望你能尽快地创造价值。大公司能比小公司好的就是有雄厚的资金实力可以支撑完善的培训机制，只要没有智力的硬伤便能将你培养成他们的未来劳动力。而小公司则没有那么多money来建立自己的培训机制，只能通过参与项目，从简单到复杂。以项目驱动这点也很不错，最忌讳的就是上来单独分一个项目，自己一边干去，还给一个特别紧迫的期限。这尼玛完全将新人当老员工使，除了待遇的不同，其他的没别的了。&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;section-1&quot;&gt;2. 一定要专一门吃饭的技能&lt;/h3&gt;
+&lt;p&gt;不管从事任何职业，或者打算将来从事的职业，一定要逐步学习并精通，因为今后你要靠它吃饭。虽说“工欲善其事，必先利其器”，但不要将重心过于偏向工具的精通上，毕竟工具只是辅助工具，能够满足自己的要求即可。这点我深有体会。一直以来，我一直很注重工具技能的学习，从开始的Linux系统及命令，到shell编程，再到Vim各种插件及tmux的使用，再到Git的操作…一直都热衷学习工具的方方面面，而不是将重心放在编程。也即是没有重点培养自己的创造力，而是学习能力。所以决定将重心逐步转移到创造力上，从写博客开始！&lt;/p&gt;
+
+&lt;h3 id=&quot;section-2&quot;&gt;3. 毕业首选大公司&lt;/h3&gt;
+&lt;p&gt;毕业初入社会，一定要尽量先进大公司。大公司之所以能够做大，肯定有她的过人之处,通过深处其中能够汲取精华。不过并不代表小公司便没有可取之处，特别是那种初创企业，应该也是优先选择的范围。&lt;/p&gt;
+
+&lt;h3 id=&quot;section-3&quot;&gt;4. 身体是革命的本钱&lt;/h3&gt;
+&lt;p&gt;实习一周，每天都感觉非常累。在学校已经习惯午睡，但实习后便没几乎没机会，一到下午就犯困，晚上回来后也没有心思再学习了，专注度完全不够。所以趁在学校好好锻炼身体，这样才能精神充沛干其他事情。没有好身体，严重影响学习工作的专注，专注度完全不够。所以趁在学校好好锻炼身体，这样才能精神充沛干其他事情。没有好身体，严重影响学习工作的专注度。。&lt;/p&gt;
+</description>
+        <pubDate>Mon, 05 May 2014 19:45:00 +0800</pubDate>
+        <link>http://xautjzd.github.io/2014/05/05/some-feelings-about-intern-experience.html</link>
+        <guid isPermaLink="true">http://xautjzd.github.io/2014/05/05/some-feelings-about-intern-experience.html</guid>
+        
+        
+        <category>life</category>
+        
+      </item>
+    
+  </channel>
+</rss>

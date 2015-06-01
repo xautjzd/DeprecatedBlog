@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Cookies vs Sessions</title>
+  <meta name="description" content="Http是无状态的协议，客户端给服务器发送请求，服务端响应客户端的请求，会话结束。这样两次会话间不便没有任何关联。但有时候需要在会话间进行信息共享，如：购物车，保存用户名与密码等。为此，cookie与session便诞生了,它们的存在就是为了弥补http协议无状态的缺陷。">
+
+  <link href='http://fonts.googleapis.com/css?family=Open+Sans'
+  rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="http://xautjzd.github.io/2013/09/09/cookies-vs-sessions.html">
+  <link rel="alternate" type="application/rss+xml" title="xautjzd" href="http://xautjzd.github.io/feed.xml" />
+</head>
+
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">xautjzd</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+          <a class="page-link" href="/books/">Books</a>
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/links/">Links</a>
+          
+        
+          
+          <a class="page-link" href="/list/">Archive</a>
+          
+        
+          
+        
+          <a class="page-link" href="/feed.xml">RSS</a>
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Cookies vs Sessions</h1>
+    <p class="post-meta">Sep 9, 2013</p>
+  </header>
+
+  <article class="post-content">
+    <p>Http是无状态的协议，客户端给服务器发送请求，服务端响应客户端的请求，会话结束。这样两次会话间不便没有任何关联。但有时候需要在会话间进行信息共享，如：购物车，保存用户名与密码等。为此，cookie与session便诞生了,它们的存在就是为了弥补http协议无状态的缺陷。</p>
+
+<p>cookie与session最大的不同是：cookie保存在用户的浏览器中，而session则保留在服务端。正是这种不同决定了它们的不用使用场合。</p>
+
+<h2 id="cookie">Cookie</h2>
+<hr />
+
+<p>cookie机制是通过扩展http协议来实现的。服务器通过在HTTP的响应头中加上一行特殊的指示以提示浏览器按照指示生成相应的cookie。其实纯粹的客户端脚本如JavaScript或者VBScript也可以生成cookie。而cookie的使用是由浏览器按照一定的原则在后台自动发送给服务器端。</p>
+
+<p>cookie主要内容包括：Name,Content,Path,Domain,Expires(过期时间)等。Domain与Path一起构成cookie的作用范围。</p>
+
+<p>若不设置Expires,则默认的cookie生命周期为浏览器会话期间，一旦浏览器关闭，cookie则会被清理掉，这种生命周期为浏览器会话期的cookie被成为会话cookie。会话cookie存储在内存中而不是在硬盘上。</p>
+
+<p>若设置了Expires,浏览器则会把生成的cookie保存在硬盘上，即使浏览器关闭后再打开，cookie依然有效，直至超过设置的expires。</p>
+
+<p>另外，session大小有限制，一旦浏览器禁用cookie，则采用cookie的购物网站便不能进行购物，所以这时候得用session了。</p>
+
+<!-- more -->
+
+<h2 id="session">Session</h2>
+<hr />
+
+<p>session机制是一种服务器端的机制，服务器使用一种类似于散列表的结构（也可能就是使用散列表）来保存信息。</p>
+
+<p>当程序需要为某个客户端的请求创建一个session时，服务器首先检查这个客户端的请求里是否已包含了一个session标识（称为session id），如果已包含则说明以前已经为此客户端创建过session，服务器就按照session id把这个session检索出来使用（检索不到，会新建一个），如果客户端请求不包含session id，则为此客户端创建一个session并生成一个与此session相关联的session id，session id的值应该是一个既不会重复，又不容易被找到规律以仿造的字符串，这个session id将被在本次响应中返回给客户端保存。保存这个session id的方式可以采用cookie，这样在交互过程中浏览器可以自动的按照规则把这个标识发送给服务器。一般这个cookie的名字都是类似于SEEESIONID。但cookie可以被人为的禁止，则必须有其他机制以便在cookie被禁止时仍然能够把session id传递回服务器。</p>
+
+<p>经常被使用的一种技术叫做URL重写，就是把session id直接附加在URL路径的后面。还有一种技术叫做表单隐藏字段。就是服务器会自动修改表单，添加一个隐藏字段，以便在表单提交时能够把session id传递回服务器。</p>
+
+<h2 id="cookiesession">Cookie与Session区别</h2>
+<hr />
+
+<ol>
+  <li>cookie存储在客户端的浏览器中，而session则存储在服务器上。</li>
+  <li>cookie不安全，可以通过分析本地cookie并进行cookie欺骗，而session则相对比较安全。</li>
+  <li>session会在服务器上保存一段时间，但当访问量增大，会占用服务器的存储空间，影响服务器的性能，如考虑到减轻服务器的性能，则可以选择cookie。</li>
+  <li>单个cookie保存的数据不会超过4k。</li>
+</ol>
+
+<p>所以，一般将登陆等重要信息采用session保存，而其他信息则采用cookie。</p>
+
+<h2 id="section">参考资料</h2>
+<hr />
+<ol>
+  <li>http://en.wikipedia.org/wiki/Session_(computer_science)</li>
+  <li>http://en.wikipedia.org/wiki/HTTP_cookie#cite_note-1</li>
+  <li>http://www.cnblogs.com/shiyangxt/articles/1305506.html</li>
+</ol>
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li>xautjzd</li>
+          <li><a href="mailto:xautjzd@gmail.com">xautjzd@gmail.com</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col  footer-col-2">
+        <ul class="social-media-list">
+          
+          <li>
+            <a href="https://github.com/xautjzd">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">xautjzd</span>
+            </a>
+          </li>
+          
+
+          
+          <li>
+            <a href="https://twitter.com/xautjzd">
+              <span class="icon  icon--twitter">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809
+                  c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/>
+                </svg>
+              </span>
+
+              <span class="username">xautjzd</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>
